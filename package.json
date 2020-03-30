@@ -1,0 +1,35 @@
+{
+  "name": "Title",
+  "version": "1.0.0",
+  "description": "Title",
+  "main": "",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "build:client": "node build/build",
+    "build:client:prod": "node build/build --prod"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/node": "^12.0.2",
+    "awesome-typescript-loader": "^5.2.1",
+    "fs": "0.0.2",
+    "fs-extra": "^8.0.1",
+    "shelljs": "^0.8.3",
+    "shx": "^0.3.2",
+    "source-map-loader": "^0.2.4",
+    "three": "^0.114.0",
+    "tween.js": "^16.6.0",
+    "typescript": "^3.8.3",
+    "uglify-js": "^3.5.15",
+    "uglifycss": "0.0.29",
+    "webpack": "^4.32.2",
+    "webpack-cli": "^3.3.2"
+  }
+}

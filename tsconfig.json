@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./src/ts/",
+    "experimentalDecorators": true,
+    "moduleResolution": "node",
+    "module": "esnext",
+    "importHelpers": true,
+    "target": "es5",
+    "allowJs": true,
+    "sourceMap": true,
+    "outDir": "build/prod/src",
+    "noImplicitAny": false,
+    "strictBindCallApply": true,
+    "types": [
+      "node"
+    ],
+    "lib": [
+      "dom",
+      "es7",
+      "scripthost",
+      "es2015.collection",
+      "es2015.core",
+      "es2015.iterable",
+      "es2015.promise",
+      "es2015.symbol",
+      "es2015.symbol.wellknown"
+    ]
+  },
+  "include": [
+    "src/ts/**/*"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
