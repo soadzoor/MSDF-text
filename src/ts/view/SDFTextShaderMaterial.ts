@@ -46,9 +46,6 @@ varying vec2 vUv;
 
 uniform sampler2D map;
 
-float threshold = 0.5;
-float smoothing = 0.05;
-
 float median(float r, float g, float b)
 {
 	return max(min(r, g), min(max(r, g), b));
@@ -64,7 +61,7 @@ void main()
 `;
 	constructor(textureAtlas: Texture, isWebGL2: boolean)
 	{
-		super({transparent: true});
+		super({transparent: true, depthWrite: false});
 
 		if (isWebGL2)
 		{
