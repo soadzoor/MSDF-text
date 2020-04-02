@@ -1,27 +1,37 @@
 import {RawShaderMaterial, Shader, Texture} from "three";
 
-export class SDFTextShader extends RawShaderMaterial
+export class SDFTextShaderMaterial extends RawShaderMaterial
 {
 	private _textureAtlas: {
-		type: "t",
-		value: Texture
+		type: "t";
+		value: Texture;
+	};
+
+	private _textureAtlasResolution: {
+		type: "2fv";
+		value: number[];
 	};
 
 	private _vertexShader: string = 
 `precision highp float;
 
 attribute vec3 position;
+attribute mat4 instanceMatrix;
 attribute vec2 uv;
+attribute vec2 uvOffset;
+attribute vec2 uvSize;
 
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
+
+uniform vec2 textureAtlasResolution;
 
 varying vec2 vUv;
 
 void main()
 {
-	vUv = uv;
-	gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+	vUv = uvOffset + uv*uvSize;
+	gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
 }
 `;
 
@@ -46,10 +56,7 @@ float median(float r, float g, float b)
 
 void main()
 {
-	vec2 uv = vUv;
-	// show "j" only
-	// vec2 uv = (vUv * vec2(0.029296875, 0.0859375)) + vec2(0.02734375, 0.822265625);
-	vec3 font = texture2D(map, uv).rgb;
+	vec3 font = texture2D(map, vUv).rgb;
 	float sigDist = median(font.r, font.g, font.b) - 0.5;
 	float alpha = clamp(sigDist / fwidth(sigDist) + 0.5, 0.0, 1.0);
 	gl_FragColor = vec4(0, 0, 0, alpha);
@@ -76,13 +83,19 @@ void main()
 			value: textureAtlas
 		};
 
+		this._textureAtlasResolution = {
+			type: "2fv",
+			value: [textureAtlas.image.width, textureAtlas.image.height]
+		};
+
 		this.onBeforeCompile = (shader: Shader) =>
 		{
 			shader.vertexShader = this._vertexShader;
 			shader.fragmentShader = this._fragmentShader;
 
 			shader.uniforms = {
-				map: this._textureAtlas
+				map: this._textureAtlas,
+				textureAtlasResolution: this._textureAtlasResolution
 			} as any;
 		};
 	}

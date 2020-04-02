@@ -86,7 +86,7 @@ export class OrbitControls extends EventDispatcher
 			enablePan: false,
 			panSpeed: 1,
 			minDistance: 1,
-			maxDistance: 3
+			maxDistance: 20
 		};
 
 		this._distance = new BoundedConvergence(offsetLength, offsetLength, this._config.minDistance, this._config.maxDistance);

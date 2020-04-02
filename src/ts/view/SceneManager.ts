@@ -2,14 +2,16 @@ import {Scene, PerspectiveCamera, WebGLRenderer, AmbientLight, DirectionalLight,
 import { OrbitControls } from "./OrbitControls";
 import { SceneLoader } from "./SceneLoader";
 import { VignetteBackground } from "./VignetteBackground";
-import {SDFTextShader} from "./SDFTextShader";
+import {Text3D, IFont} from "./Text3D";
+import {FontLoader} from "./FontLoader";
+import {FPSControls} from "./FPSControls";
 
 export class SceneManager
 {
 	private _canvas: HTMLCanvasElement;
 	private _scene: Scene;
 	private _camera: PerspectiveCamera;
-	private _controls: OrbitControls;
+	private _controls: FPSControls;
 	private _renderer: WebGLRenderer;
 	private _sceneLoader: SceneLoader;
 
@@ -20,17 +22,20 @@ export class SceneManager
 		this._camera = new PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.05, 70);
 		this._camera.position.set(0.1, 0.1, 2);
 
-		const texture = new TextureLoader().load("assets/Roboto-Bold.png", () =>
+		const texture = new TextureLoader().load("assets/Roboto-Bold.png", async () =>
 		{
 			this.initRenderer();
 
 			texture.magFilter = LinearFilter;
 			texture.minFilter = LinearFilter;
 			texture.generateMipmaps = false;
-			const geometry = new PlaneBufferGeometry();
-			const material = new SDFTextShader(texture, this._renderer.capabilities.isWebGL2);
+			//const geometry = new PlaneBufferGeometry();
+			//const material = new SDFTextShaderMaterial(texture, this._renderer.capabilities.isWebGL2);
 
-			const mesh = new Mesh(geometry, material);
+			const font = (await FontLoader.load("assets/Roboto-Bold-msdf.json")) as IFont;
+			const text3D = new Text3D(font, "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque et lacus ut libero dignissim suscipit vel quis ex. Praesent diam lorem, varius non lacinia id, mattis et tellus.", texture, this._renderer.capabilities.isWebGL2);
+			const mesh = text3D.instancedMesh;
+			//const mesh = new Mesh(geometry, material);
 			this._scene.add(mesh);
 	
 			this.initBackground();
@@ -69,7 +74,8 @@ export class SceneManager
 
 	private initControls()
 	{
-		this._controls = new OrbitControls(this._camera, this._canvas.parentElement);
+		this._controls = new FPSControls(this);
+		this._controls.setWASDSpeed(0.1);
 		this._controls.activate();
 	}
 
@@ -117,6 +123,16 @@ export class SceneManager
 	public get scene()
 	{
 		return this._scene;
+	}
+
+	public get camera()
+	{
+		return this._camera;
+	}
+
+	public get canvas()
+	{
+		return this._canvas;
 	}
 
 	private update = (time: number) =>
