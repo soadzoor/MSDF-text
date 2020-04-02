@@ -56,12 +56,18 @@ void main()
 	vec3 font = texture2D(map, vUv).rgb;
 	float sigDist = median(font.r, font.g, font.b) - 0.5;
 	float alpha = clamp(sigDist / fwidth(sigDist) + 0.5, 0.0, 1.0);
+	
+	if (alpha < 0.0001)
+	{
+		discard;
+	}
+
 	gl_FragColor = vec4(0, 0, 0, alpha);
 }
 `;
 	constructor(textureAtlas: Texture, isWebGL2: boolean)
 	{
-		super({transparent: true, depthWrite: false});
+		super({transparent: true});
 
 		if (isWebGL2)
 		{
@@ -70,8 +76,8 @@ void main()
 			.replace(/attribute/g, "in");
 
 			this._fragmentShader = `#version 300 es\n${this._fragmentShader}`
-			.replace(/varying/g, "in").replace(/texture2D/g, "texture").
-			replace(/precision highp float;/, `precision highp float;\nout vec4 outputColor;`)
+			.replace(/varying/g, "in").replace(/texture2D/g, "texture")
+			.replace(/precision highp float;/, `precision highp float;\nout vec4 outputColor;`)
 			.replace(/gl_FragColor/g, "outputColor");
 		}
 
