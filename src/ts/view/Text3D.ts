@@ -124,15 +124,56 @@ export class Text3D
 		return geometry;
 	}
 
+	private calculateTextObjectSize()
+	{
+		const currentPos = {
+			x: 0,
+			y: 0
+		};
+
+		const scaleCorrection = 0.05;
+		let previousGlyph: IChar = null;
+		let maxLineWidth = 0;
+		for (const lineOfText of this._textLines)
+		{
+			currentPos.x = 0;
+			for (let i = 0; i < lineOfText.length; ++i)
+			{
+				const char = lineOfText[i];
+
+				const glyph = this._glyphs.get(char);
+				if (glyph)
+				{
+					const kerning = previousGlyph ? this.getKerning(previousGlyph.id, glyph.id) : 0;
+					currentPos.x += (glyph.xadvance + kerning) * scaleCorrection;
+					previousGlyph = glyph;
+				}
+				else
+				{
+					console.log(`Unknown char: ${char}`);
+				}
+			}
+			maxLineWidth = Math.max(maxLineWidth, currentPos.x);
+			currentPos.y -= this._font.common.lineHeight*scaleCorrection;
+		}
+	
+		return {
+			x: maxLineWidth,
+			y: Math.abs(currentPos.y)
+		};
+	}
+
 	private createGeometry()
 	{
 		const allChars = this._textLines.join("").length;
 		const geometry = this.createInstancedBufferGeometry(allChars);
 		this._instancedMesh = new InstancedMesh(geometry, new MSDFTextShaderMaterial(this._textureAtlas, this._isWebGL2Available), allChars);
 
+		const textObjectSize = this.calculateTextObjectSize();
+
 		const currentPos = {
-			x: 0,
-			y: 0
+			x: -textObjectSize.x / 2,
+			y: textObjectSize.y / 2
 		};
 
 		const dummy = new Object3D();
@@ -142,16 +183,16 @@ export class Text3D
 		let counter = 0;
 		for (const lineOfText of this._textLines)
 		{
-			currentPos.x = 0;
+			currentPos.x = -textObjectSize.x / 2;
 			for (let i = 0; i < lineOfText.length; ++i)
 			{
 				const char = lineOfText[i];
-	
+
 				const glyph = this._glyphs.get(char);
 				if (glyph)
 				{
 					const kerning = previousGlyph ? this.getKerning(previousGlyph.id, glyph.id) : 0;
-					dummy.position.set(currentPos.x + (glyph.xoffset + kerning) * scaleCorrection, currentPos.y + (((this._font.common.lineHeight - glyph.height) - glyph.yoffset) * scaleCorrection), 0);
+					dummy.position.set(currentPos.x + (glyph.xoffset + kerning) * scaleCorrection, currentPos.y + (((this._font.common.lineHeight - glyph.height) - glyph.yoffset - this._font.common.lineHeight) * scaleCorrection), 0);
 					dummy.scale.set(glyph.width * scaleCorrection, glyph.height * scaleCorrection, 1);
 					dummy.updateMatrix();
 					this._instancedMesh.setMatrixAt(counter, dummy.matrix);
@@ -170,6 +211,7 @@ export class Text3D
 			}
 			currentPos.y -= this._font.common.lineHeight*scaleCorrection;
 		}
+		console.log(textObjectSize);
 	}
 
 	public get instancedMesh()

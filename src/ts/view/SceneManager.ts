@@ -36,7 +36,8 @@ export class SceneManager
 
 			const textLines = shakespeare.split("\n");
 			// const textLines = [
-			// 	"VAVAVBA"
+			// 	"ABC",
+			// 	"DEF"
 			// ];
 			const text3D = new Text3D(font, textLines, texture, this._renderer.capabilities.isWebGL2);
 			const mesh = text3D.instancedMesh;
