@@ -1,9 +1,8 @@
-import {Scene, PerspectiveCamera, WebGLRenderer, AmbientLight, DirectionalLight, HemisphereLight, PlaneBufferGeometry, TextureLoader, Mesh, LinearFilter} from "three";
-import { OrbitControls } from "./OrbitControls";
+import {Scene, PerspectiveCamera, WebGLRenderer, AmbientLight, DirectionalLight, HemisphereLight, TextureLoader, LinearFilter} from "three";
 import { SceneLoader } from "./SceneLoader";
 import { VignetteBackground } from "./VignetteBackground";
 import {Text3D, IFont} from "./Text3D";
-import {FontLoader} from "./FontLoader";
+import {DataLoader} from "./DataLoader";
 import {FPSControls} from "./FPSControls";
 
 export class SceneManager
@@ -19,7 +18,7 @@ export class SceneManager
 	{
 		this._canvas = <HTMLCanvasElement>document.getElementById("myCanvas");
 		this._scene = new Scene();
-		this._camera = new PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.05, 70);
+		this._camera = new PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 7000);
 		this._camera.position.set(0.1, 0.1, 2);
 
 		const texture = new TextureLoader().load("assets/Roboto-Bold.png", async () =>
@@ -32,8 +31,15 @@ export class SceneManager
 			//const geometry = new PlaneBufferGeometry();
 			//const material = new SDFTextShaderMaterial(texture, this._renderer.capabilities.isWebGL2);
 
-			const font = (await FontLoader.load("assets/Roboto-Bold-msdf.json")) as IFont;
-			const text3D = new Text3D(font, "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque et lacus ut libero dignissim suscipit vel quis ex. Praesent diam lorem, varius non lacinia id, mattis et tellus.", texture, this._renderer.capabilities.isWebGL2);
+			const font = (await DataLoader.loadJSON("assets/Roboto-Bold-msdf.json")) as IFont;
+
+			const shakespeare = await DataLoader.loadTXT("assets/shakespeare.txt");
+
+			const textLines = shakespeare.split("\n");
+			// const textLines = [
+			// 	"VAVAVBA"
+			// ];
+			const text3D = new Text3D(font, textLines, texture, this._renderer.capabilities.isWebGL2);
 			const mesh = text3D.instancedMesh;
 			//const mesh = new Mesh(geometry, material);
 			this._scene.add(mesh);
@@ -75,7 +81,7 @@ export class SceneManager
 	private initControls()
 	{
 		this._controls = new FPSControls(this);
-		this._controls.setWASDSpeed(0.1);
+		this._controls.setWASDSpeed(3);
 		this._controls.activate();
 	}
 

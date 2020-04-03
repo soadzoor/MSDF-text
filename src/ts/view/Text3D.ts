@@ -17,6 +17,13 @@ interface IChar
 	page: number;
 }
 
+interface IKerning
+{
+	first: number; // left char id
+	second: number; // right char id
+	amount: number;
+}
+
 export interface IFont
 {
 	common: {
@@ -26,6 +33,7 @@ export interface IFont
 		scaleH: number;
 	};
 	chars: IChar[];
+	kernings: IKerning[];
 }
 
 export class Text3D
@@ -40,16 +48,16 @@ export class Text3D
 		y: number;
 	};
 	private _glyphs: Map<string, IChar> = new Map();
-	private _text: string;
+	private _textLines: string[]; // lines of textLines
 	private _textureAtlas: Texture;
 	private _isWebGL2Available: boolean;
 	private _instancedMesh: InstancedMesh;
 
-	constructor(font: IFont, text: string, textureAtlas: Texture, isWebGL2Available: boolean)
+	constructor(font: IFont, textLines: string[], textureAtlas: Texture, isWebGL2Available: boolean)
 	{
 		this._font = font;
 		this.parseFont(this._font);
-		this._text = text;
+		this._textLines = textLines;
 		this._textureAtlas = textureAtlas;
 		this._isWebGL2Available = isWebGL2Available;
 
@@ -70,6 +78,19 @@ export class Text3D
 				this._glyphs.set(char.char, char);
 			}
 		}
+	}
+
+	private getKerning(leftCharID: number, rightCharID: number)
+	{
+		for (const kerning of this._font.kernings)
+		{
+			if (kerning.first === leftCharID && kerning.second === rightCharID)
+			{
+				return kerning.amount;
+			}
+		}
+
+		return 0;
 	}
 
 	private createInstancedBufferGeometry(charCount: number)
@@ -105,8 +126,9 @@ export class Text3D
 
 	private createGeometry()
 	{
-		const geometry = this.createInstancedBufferGeometry(this._text.length);
-		this._instancedMesh = new InstancedMesh(geometry, new MSDFTextShaderMaterial(this._textureAtlas, this._isWebGL2Available), this._text.length);
+		const allChars = this._textLines.join("").length;
+		const geometry = this.createInstancedBufferGeometry(allChars);
+		this._instancedMesh = new InstancedMesh(geometry, new MSDFTextShaderMaterial(this._textureAtlas, this._isWebGL2Available), allChars);
 
 		const currentPos = {
 			x: 0,
@@ -116,31 +138,38 @@ export class Text3D
 		const dummy = new Object3D();
 
 		const scaleCorrection = 0.05;
-
-		for (let i = 0; i < this._text.length; ++i)
+		let previousGlyph: IChar = null;
+		let counter = 0;
+		for (const lineOfText of this._textLines)
 		{
-			const char = this._text[i];
-
-			const glyph = this._glyphs.get(char);
-			if (glyph)
+			currentPos.x = 0;
+			for (let i = 0; i < lineOfText.length; ++i)
 			{
-				dummy.position.set(currentPos.x + glyph.xoffset * scaleCorrection, currentPos.y + (((this._font.common.lineHeight - glyph.height) - glyph.yoffset) * scaleCorrection), 0);
-				dummy.scale.set(glyph.width * scaleCorrection, glyph.height * scaleCorrection, 1);
-				dummy.updateMatrix();
-				this._instancedMesh.setMatrixAt(i, dummy.matrix);
+				const char = lineOfText[i];
+	
+				const glyph = this._glyphs.get(char);
+				if (glyph)
+				{
+					const kerning = previousGlyph ? this.getKerning(previousGlyph.id, glyph.id) : 0;
+					dummy.position.set(currentPos.x + (glyph.xoffset + kerning) * scaleCorrection, currentPos.y + (((this._font.common.lineHeight - glyph.height) - glyph.yoffset) * scaleCorrection), 0);
+					dummy.scale.set(glyph.width * scaleCorrection, glyph.height * scaleCorrection, 1);
+					dummy.updateMatrix();
+					this._instancedMesh.setMatrixAt(counter, dummy.matrix);
+	
+					(geometry.attributes.uvOffset as InstancedBufferAttribute).setXY(counter, glyph.x / this._atlasScale.x, (this._atlasScale.y - glyph.y - glyph.height) / this._atlasScale.y);
+					(geometry.attributes.uvSize as InstancedBufferAttribute).setXY(counter, glyph.width / this._atlasScale.x, glyph.height / this._atlasScale.y);
 
-				(geometry.attributes.uvOffset as InstancedBufferAttribute).setXY(i, glyph.x / this._atlasScale.x, (this._atlasScale.y - glyph.y - glyph.height) / this._atlasScale.y);
-				(geometry.attributes.uvSize as InstancedBufferAttribute).setXY(i, glyph.width / this._atlasScale.x, glyph.height / this._atlasScale.y);
-				//(geometry.attributes.uvOffset as InstancedBufferAttribute).needsUpdate = true;
-
-				currentPos.x += glyph.xadvance*scaleCorrection;
+					currentPos.x += (glyph.xadvance + kerning) * scaleCorrection;
+					counter++;
+					previousGlyph = glyph;
+				}
+				else
+				{
+					console.log(`Unknown char: ${char}`);
+				}
 			}
-			else
-			{
-				console.log(`Unknown char: ${char}`);
-			}
+			currentPos.y -= this._font.common.lineHeight*scaleCorrection;
 		}
-
 	}
 
 	public get instancedMesh()
