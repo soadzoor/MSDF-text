@@ -32,7 +32,6 @@ export class SceneManager
 			//const material = new SDFTextShaderMaterial(texture, this._renderer.capabilities.isWebGL2);
 
 			const font = (await DataLoader.loadJSON("assets/Roboto-Bold-msdf.json")) as IFont;
-
 			const shakespeare = await DataLoader.loadTXT("assets/shakespeare.txt");
 
 			const textLines = shakespeare.split("\n");
