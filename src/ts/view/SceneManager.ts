@@ -34,13 +34,13 @@ export class SceneManager
 			const font = (await DataLoader.loadJSON("assets/Roboto-Bold-msdf.json")) as IFont;
 
 			const shakespeare = await DataLoader.loadTXT("assets/shakespeare.txt");
-
 			const textLines = shakespeare.split("\n");
 			// const textLines = [
-			// 	"VAVAVBA"
+			// 	"AB",
+			// 	"VAVAVAV.V"
 			// ];
 			const text3D = new Text3D(font, textLines, texture, this._renderer.capabilities.isWebGL2);
-			const mesh = text3D.instancedMesh;
+			const mesh = text3D.mesh;
 			//const mesh = new Mesh(geometry, material);
 			this._scene.add(mesh);
 	

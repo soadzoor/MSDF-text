@@ -16,10 +16,7 @@ export class MSDFTextShaderMaterial extends RawShaderMaterial
 `precision highp float;
 
 attribute vec3 position;
-attribute mat4 instanceMatrix;
 attribute vec2 uv;
-attribute vec2 uvOffset;
-attribute vec2 uvSize;
 
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
@@ -30,8 +27,8 @@ varying vec2 vUv;
 
 void main()
 {
-	vUv = uvOffset + uv*uvSize;
-	gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
+	vUv = uv;
+	gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }
 `;
 

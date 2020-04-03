@@ -1,4 +1,4 @@
-import {InstancedBufferGeometry, BufferAttribute, InstancedBufferAttribute, Object3D, InstancedMesh, Texture} from "three";
+import {InstancedBufferGeometry, BufferAttribute, InstancedBufferAttribute, Object3D, InstancedMesh, Texture, BufferGeometry, Mesh} from "three";
 import {MSDFTextShaderMaterial} from "./MSDFTextShaderMaterial";
 
 interface IChar
@@ -51,7 +51,7 @@ export class Text3D
 	private _textLines: string[]; // lines of textLines
 	private _textureAtlas: Texture;
 	private _isWebGL2Available: boolean;
-	private _instancedMesh: InstancedMesh;
+	private _mesh: Mesh;
 
 	constructor(font: IFont, textLines: string[], textureAtlas: Texture, isWebGL2Available: boolean)
 	{
@@ -93,33 +93,24 @@ export class Text3D
 		return 0;
 	}
 
-	private createInstancedBufferGeometry(charCount: number)
+	private createBufferGeometry(charCount: number)
 	{
-		const geometry = new InstancedBufferGeometry();
-		const positions = new Float32Array([
-			0, 0, 0,
-						1, 0, 0,
-						1, 1, 0,
-						0, 1, 0
-		]);
+		const geometry = new BufferGeometry();
+		const positions = new Float32Array(charCount*4*3);
 
 		geometry.setAttribute("position", new BufferAttribute(positions, 3));
 
-		const uvs = new Float32Array([
-			0, 0,
-			1, 0,
-			1, 1,
-			0, 1
-		]);
+		const uvs = new Float32Array(charCount*4*2);
 		geometry.setAttribute("uv", new BufferAttribute(uvs, 2));
-		
-		geometry.setIndex(new BufferAttribute(new Uint8Array([
-			0, 1, 2,
-			0, 2, 3
-		]), 1));
 
-		geometry.setAttribute("uvOffset", new InstancedBufferAttribute(new Float32Array(charCount * 2), 2));
-		geometry.setAttribute("uvSize", new InstancedBufferAttribute(new Float32Array(charCount * 2), 2));
+		const indeces = [];
+		for (let i = 0; i < charCount; ++i)
+		{
+			indeces.push(i*4); indeces.push(i*4 + 1); indeces.push(i*4 + 2);
+			indeces.push(i*4); indeces.push(i*4 + 2); indeces.push(i*4 + 3);
+		}
+		
+		geometry.setIndex(new BufferAttribute(new Uint8Array(indeces), 1));
 
 		return geometry;
 	}
@@ -127,19 +118,28 @@ export class Text3D
 	private createGeometry()
 	{
 		const allChars = this._textLines.join("").length;
-		const geometry = this.createInstancedBufferGeometry(allChars);
-		this._instancedMesh = new InstancedMesh(geometry, new MSDFTextShaderMaterial(this._textureAtlas, this._isWebGL2Available), allChars);
+		const geometry = this.createBufferGeometry(allChars);
+		this._mesh = new Mesh(geometry, new MSDFTextShaderMaterial(this._textureAtlas, this._isWebGL2Available));
 
 		const currentPos = {
 			x: 0,
 			y: 0
 		};
 
-		const dummy = new Object3D();
-
 		const scaleCorrection = 0.05;
 		let previousGlyph: IChar = null;
 		let counter = 0;
+
+		// pos and uv
+		const attribs = [
+			0, 0, 0,
+			1, 0, 0,
+			1, 1, 0,
+			0, 1, 0
+		];
+		const positionItemSize = 3;
+		const attribElementCount = attribs.length / positionItemSize;
+
 		for (const lineOfText of this._textLines)
 		{
 			currentPos.x = 0;
@@ -151,13 +151,39 @@ export class Text3D
 				if (glyph)
 				{
 					const kerning = previousGlyph ? this.getKerning(previousGlyph.id, glyph.id) : 0;
-					dummy.position.set(currentPos.x + (glyph.xoffset + kerning) * scaleCorrection, currentPos.y + (((this._font.common.lineHeight - glyph.height) - glyph.yoffset) * scaleCorrection), 0);
-					dummy.scale.set(glyph.width * scaleCorrection, glyph.height * scaleCorrection, 1);
-					dummy.updateMatrix();
-					this._instancedMesh.setMatrixAt(counter, dummy.matrix);
-	
-					(geometry.attributes.uvOffset as InstancedBufferAttribute).setXY(counter, glyph.x / this._atlasScale.x, (this._atlasScale.y - glyph.y - glyph.height) / this._atlasScale.y);
-					(geometry.attributes.uvSize as InstancedBufferAttribute).setXY(counter, glyph.width / this._atlasScale.x, glyph.height / this._atlasScale.y);
+
+					const positionAttrib = (geometry.attributes.position as BufferAttribute);
+					const uvAttrib = (geometry.attributes.uv as BufferAttribute);
+					const bottomLeft = {
+						x: currentPos.x + (glyph.xoffset + kerning) * scaleCorrection,
+						y: currentPos.y + (((this._font.common.lineHeight - glyph.height) - glyph.yoffset) * scaleCorrection)
+					};
+
+					const scale = {
+						x: glyph.width * scaleCorrection,
+						y: glyph.height * scaleCorrection
+					};
+
+					const uvSize = {
+						x: glyph.width / this._atlasScale.x,
+						y: glyph.height / this._atlasScale.y
+					};
+
+					for (let k = 0; k < attribElementCount; ++k)
+					{
+						positionAttrib.setXYZ(
+							counter*4 + k,
+							bottomLeft.x + attribs[k*positionItemSize + 0] * scale.x,
+							bottomLeft.y + attribs[k*positionItemSize + 1] * scale.y,
+							0
+						);
+
+						uvAttrib.setXY(
+							counter * 4 + k,
+							(glyph.x / this._atlasScale.x) + attribs[k*positionItemSize + 0] * uvSize.x,
+							((this._atlasScale.y - glyph.y - glyph.height) / this._atlasScale.y) + attribs[k*positionItemSize + 1] * uvSize.y,
+						)
+					}
 
 					currentPos.x += (glyph.xadvance + kerning) * scaleCorrection;
 					counter++;
@@ -172,8 +198,8 @@ export class Text3D
 		}
 	}
 
-	public get instancedMesh()
+	public get mesh()
 	{
-		return this._instancedMesh;
+		return this._mesh;
 	}
 }
