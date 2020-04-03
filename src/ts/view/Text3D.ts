@@ -1,5 +1,5 @@
 import {InstancedBufferGeometry, BufferAttribute, InstancedBufferAttribute, Object3D, InstancedMesh, Texture} from "three";
-import {SDFTextShaderMaterial} from "./SDFTextShaderMaterial";
+import {MSDFTextShaderMaterial} from "./MSDFTextShaderMaterial";
 
 interface IChar
 {
@@ -106,7 +106,7 @@ export class Text3D
 	private createGeometry()
 	{
 		const geometry = this.createInstancedBufferGeometry(this._text.length);
-		this._instancedMesh = new InstancedMesh(geometry, new SDFTextShaderMaterial(this._textureAtlas, this._isWebGL2Available), this._text.length);
+		this._instancedMesh = new InstancedMesh(geometry, new MSDFTextShaderMaterial(this._textureAtlas, this._isWebGL2Available), this._text.length);
 
 		const currentPos = {
 			x: 0,

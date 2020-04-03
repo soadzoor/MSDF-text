@@ -1,6 +1,6 @@
 import {RawShaderMaterial, Shader, Texture} from "three";
 
-export class SDFTextShaderMaterial extends RawShaderMaterial
+export class MSDFTextShaderMaterial extends RawShaderMaterial
 {
 	private _textureAtlas: {
 		type: "t";
