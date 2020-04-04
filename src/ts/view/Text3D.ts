@@ -132,11 +132,12 @@ export class Text3D
 		};
 
 		const scaleCorrection = 0.05;
-		let previousGlyph: IChar = null;
+		let previousGlyph: IChar;
 		let maxLineWidth = 0;
 		for (const lineOfText of this._textLines)
 		{
 			currentPos.x = 0;
+			previousGlyph = null;
 			for (let i = 0; i < lineOfText.length; ++i)
 			{
 				const char = lineOfText[i];
