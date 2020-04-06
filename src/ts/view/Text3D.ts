@@ -48,28 +48,32 @@ export interface IFont
 	kernings: IKerning[];
 }
 
+export interface ITextGroup
+{
+	lines: string[];
+	position: IVec2;
+	align: "left" | "center";
+}
+
 export class Text3D
 {
 	private _font: IFont;
-	private _config = {
-		lineHeight: 1,
-		spaceSize: 0.5
-	};
 	private _atlasScale: {
 		x: number;
 		y: number;
 	};
+	private _scaleCorrection: number = 0.05;
 	private _glyphs: Map<string, IChar> = new Map();
-	private _textLines: string[]; // lines of textLines
+	private _textGroups: ITextGroup[];
 	private _textureAtlas: Texture;
 	private _isWebGL2Available: boolean;
 	private _instancedMesh: InstancedMesh;
 
-	constructor(font: IFont, textLines: string[], textureAtlas: Texture, isWebGL2Available: boolean)
+	constructor(font: IFont, textGroups: ITextGroup[], textureAtlas: Texture, isWebGL2Available: boolean)
 	{
 		this._font = font;
 		this.parseFont(this._font);
-		this._textLines = textLines;
+		this._textGroups = textGroups;
 		this._textureAtlas = textureAtlas;
 		this._isWebGL2Available = isWebGL2Available;
 
@@ -136,14 +140,27 @@ export class Text3D
 		return geometry;
 	}
 
-	private preprocessText()
+	private getNumberOfChars(textGroups: ITextGroup[])
+	{
+		let count = 0;
+
+		for (const textGroup of textGroups)
+		{
+			for (const line of textGroup.lines)
+			{
+				count += line.length;
+			}
+		}
+
+		return count;
+	}
+
+	private preprocessTextGroup(textGroup: ITextGroup)
 	{
 		const currentPos = {
 			x: 0,
 			y: 0
 		};
-
-		const scaleCorrection = 0.05;
 
 		const lines: {
 			width: number;
@@ -155,7 +172,7 @@ export class Text3D
 
 		let previousGlyph: IChar;
 		let maxLineWidth = 0;
-		for (const lineOfText of this._textLines)
+		for (const lineOfText of textGroup.lines)
 		{
 			currentPos.x = 0;
 			previousGlyph = null;
@@ -175,12 +192,12 @@ export class Text3D
 					quads.push({
 						glyph: glyph,
 						position: {
-							x: currentPos.x + (glyph.xoffset + kerning) * scaleCorrection,
+							x: currentPos.x + (glyph.xoffset + kerning) * this._scaleCorrection,
 							y: currentPos.y
 						}
 					});
 
-					currentPos.x += (glyph.xadvance + kerning) * scaleCorrection;
+					currentPos.x += (glyph.xadvance + kerning) * this._scaleCorrection;
 				}
 				else
 				{
@@ -194,7 +211,7 @@ export class Text3D
 				width: lineWidth
 			});
 			maxLineWidth = Math.max(maxLineWidth, lineWidth);
-			currentPos.y -= this._font.common.lineHeight*scaleCorrection;
+			currentPos.y -= this._font.common.lineHeight * this._scaleCorrection;
 		}
 	
 		return {
@@ -206,42 +223,43 @@ export class Text3D
 		};
 	}
 
-	private createGeometry(align: "center" | "left" = "center")
+	private createGeometry()
 	{
-		const allChars = this._textLines.join("").length;
+		const allChars = this.getNumberOfChars(this._textGroups);
 		const geometry = this.createInstancedBufferGeometry(allChars);
 		this._instancedMesh = new InstancedMesh(geometry, new MSDFTextShaderMaterial(this._textureAtlas, this._isWebGL2Available), allChars);
-
-		const textObject = this.preprocessText();
-
-		const linePosPointer = {
-			x: -textObject.size.x / 2,
-			y: textObject.size.y / 2
-		};
-
 		const dummy = new Object3D();
-
-		const scaleCorrection = 0.05;
 		let counter = 0;
-		for (const lineOfText of textObject.lines)
+
+		for (const textGroup of this._textGroups)
 		{
-			linePosPointer.x = align === "left" ? -textObject.size.x / 2 : -lineOfText.width / 2;
-			for (let i = 0; i < lineOfText.quads.length; ++i)
+			const textObject = this.preprocessTextGroup(textGroup);
+
+			const linePosPointer = {
+				x: null,
+				y: textObject.size.y / 2 + textGroup.position.y
+			};
+			
+			for (const lineOfText of textObject.lines)
 			{
-				const quad = lineOfText.quads[i];
-				const glyph = quad.glyph;
+				linePosPointer.x = textGroup.position.x + (textGroup.align === "left" ? -textObject.size.x / 2 : -lineOfText.width / 2);
+				for (let i = 0; i < lineOfText.quads.length; ++i)
+				{
+					const quad = lineOfText.quads[i];
+					const glyph = quad.glyph;
 
-				dummy.position.set(linePosPointer.x + quad.position.x, linePosPointer.y + (((this._font.common.lineHeight - glyph.height) - glyph.yoffset - this._font.common.lineHeight) * scaleCorrection), 0);
-				dummy.scale.set(glyph.width * scaleCorrection, glyph.height * scaleCorrection, 1);
-				dummy.updateMatrix();
-				this._instancedMesh.setMatrixAt(counter, dummy.matrix);
+					dummy.position.set(linePosPointer.x + quad.position.x, linePosPointer.y + (((this._font.common.lineHeight - glyph.height) - glyph.yoffset - this._font.common.lineHeight) * this._scaleCorrection), 0);
+					dummy.scale.set(glyph.width * this._scaleCorrection, glyph.height * this._scaleCorrection, 1);
+					dummy.updateMatrix();
+					this._instancedMesh.setMatrixAt(counter, dummy.matrix);
 
-				(geometry.attributes.uvOffset as InstancedBufferAttribute).setXY(counter, glyph.x / this._atlasScale.x, (this._atlasScale.y - glyph.y - glyph.height) / this._atlasScale.y);
-				(geometry.attributes.uvSize as InstancedBufferAttribute).setXY(counter, glyph.width / this._atlasScale.x, glyph.height / this._atlasScale.y);
+					(geometry.attributes.uvOffset as InstancedBufferAttribute).setXY(counter, glyph.x / this._atlasScale.x, (this._atlasScale.y - glyph.y - glyph.height) / this._atlasScale.y);
+					(geometry.attributes.uvSize as InstancedBufferAttribute).setXY(counter, glyph.width / this._atlasScale.x, glyph.height / this._atlasScale.y);
 
-				counter++;
+					counter++;
+				}
+				linePosPointer.y -= this._font.common.lineHeight * this._scaleCorrection;
 			}
-			linePosPointer.y -= this._font.common.lineHeight*scaleCorrection;
 		}
 	}
 

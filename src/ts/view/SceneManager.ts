@@ -1,7 +1,7 @@
 import {Scene, PerspectiveCamera, WebGLRenderer, AmbientLight, DirectionalLight, HemisphereLight, TextureLoader, LinearFilter} from "three";
 import { SceneLoader } from "./SceneLoader";
 import { VignetteBackground } from "./VignetteBackground";
-import {Text3D, IFont} from "./Text3D";
+import {Text3D, IFont, ITextGroup} from "./Text3D";
 import {DataLoader} from "./DataLoader";
 import {FPSControls} from "./FPSControls";
 
@@ -28,18 +28,36 @@ export class SceneManager
 			texture.magFilter = LinearFilter;
 			texture.minFilter = LinearFilter;
 			texture.generateMipmaps = false;
-			//const geometry = new PlaneBufferGeometry();
-			//const material = new SDFTextShaderMaterial(texture, this._renderer.capabilities.isWebGL2);
 
 			const font = (await DataLoader.loadJSON("assets/Roboto-Bold-msdf.json")) as IFont;
-			const shakespeare = await DataLoader.loadTXT("assets/shakespeare.txt");
+			//const shakespeare = await DataLoader.loadTXT("assets/shakespeare.txt");
 
-			const textLines = shakespeare.split("\n");
-			// const textLines = [
-			// 	"ABC",
-			// 	"DEF"
-			// ];
-			const text3D = new Text3D(font, textLines, texture, this._renderer.capabilities.isWebGL2);
+			//const textLines = shakespeare.split("\n");
+			const textGroups: ITextGroup[] = [
+				{
+					lines: [
+						"AasdadsVasdasdVAVAVAvavavasdadwe.",
+						"Basdefef"
+					],
+					align: "left",
+					position: {
+						x: 0,
+						y: 0
+					}
+				},
+				{
+					lines: [
+						"CfbnfynsdfgYAYAdasdasVVasdawAWa..asd--",
+						"Dgrgserf"
+					],
+					align: "center",
+					position: {
+						x: 5,
+						y: 5
+					}
+				}
+			];
+			const text3D = new Text3D(font, textGroups, texture, this._renderer.capabilities.isWebGL2);
 			const mesh = text3D.instancedMesh;
 			this._scene.add(mesh);
 	
