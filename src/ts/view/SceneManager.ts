@@ -1,7 +1,7 @@
 import {Scene, PerspectiveCamera, WebGLRenderer, AmbientLight, DirectionalLight, HemisphereLight, TextureLoader, LinearFilter} from "three";
-import { SceneLoader } from "./SceneLoader";
-import { VignetteBackground } from "./VignetteBackground";
-import {Text3D, IFont, ITextGroup} from "./Text3D";
+import {SceneLoader} from "./SceneLoader";
+import {VignetteBackground} from "./VignetteBackground";
+import {TextGroupManager, IFont, ITextGroup} from "./TextGroupManager";
 import {DataLoader} from "./DataLoader";
 import {FPSControls} from "./FPSControls";
 
@@ -57,7 +57,7 @@ export class SceneManager
 					}
 				}
 			];
-			const text3D = new Text3D(font, textGroups, texture, this._renderer.capabilities.isWebGL2);
+			const text3D = new TextGroupManager(font, textGroups, texture, this._renderer.capabilities.isWebGL2);
 			const mesh = text3D.instancedMesh;
 			this._scene.add(mesh);
 	

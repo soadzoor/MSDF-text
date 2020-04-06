@@ -55,7 +55,7 @@ export interface ITextGroup
 	align: "left" | "center";
 }
 
-export class Text3D
+export class TextGroupManager
 {
 	private _font: IFont;
 	private _atlasScale: {
@@ -114,9 +114,9 @@ export class Text3D
 		const geometry = new InstancedBufferGeometry();
 		const positions = new Float32Array([
 			0, 0, 0,
-						1, 0, 0,
-						1, 1, 0,
-						0, 1, 0
+			1, 0, 0,
+			1, 1, 0,
+			0, 1, 0
 		]);
 
 		geometry.setAttribute("position", new BufferAttribute(positions, 3));
