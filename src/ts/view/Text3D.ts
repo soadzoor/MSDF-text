@@ -24,6 +24,18 @@ interface IKerning
 	amount: number;
 }
 
+interface IVec2
+{
+	x: number;
+	y: number;
+}
+
+interface IQuad
+{
+	glyph: IChar;
+	position: IVec2;
+}
+
 export interface IFont
 {
 	common: {
@@ -124,7 +136,7 @@ export class Text3D
 		return geometry;
 	}
 
-	private calculateTextObjectSize()
+	private preprocessText()
 	{
 		const currentPos = {
 			x: 0,
@@ -132,12 +144,23 @@ export class Text3D
 		};
 
 		const scaleCorrection = 0.05;
+
+		const lines: {
+			width: number;
+			quads: {
+				glyph: IChar;
+				position: IVec2;
+			}[];
+		}[] = [];
+
 		let previousGlyph: IChar;
 		let maxLineWidth = 0;
 		for (const lineOfText of this._textLines)
 		{
 			currentPos.x = 0;
 			previousGlyph = null;
+
+			const quads: IQuad[] = []
 			for (let i = 0; i < lineOfText.length; ++i)
 			{
 				const char = lineOfText[i];
@@ -146,73 +169,80 @@ export class Text3D
 				if (glyph)
 				{
 					const kerning = previousGlyph ? this.getKerning(previousGlyph.id, glyph.id) : 0;
-					currentPos.x += (glyph.xadvance + kerning) * scaleCorrection;
+
 					previousGlyph = glyph;
+
+					quads.push({
+						glyph: glyph,
+						position: {
+							x: currentPos.x + (glyph.xoffset + kerning) * scaleCorrection,
+							y: currentPos.y
+						}
+					});
+
+					currentPos.x += (glyph.xadvance + kerning) * scaleCorrection;
 				}
 				else
 				{
 					console.log(`Unknown char: ${char}`);
 				}
 			}
-			maxLineWidth = Math.max(maxLineWidth, currentPos.x);
+
+			const lineWidth = currentPos.x;
+			lines.push({
+				quads: quads,
+				width: lineWidth
+			});
+			maxLineWidth = Math.max(maxLineWidth, lineWidth);
 			currentPos.y -= this._font.common.lineHeight*scaleCorrection;
 		}
 	
 		return {
-			x: maxLineWidth,
-			y: Math.abs(currentPos.y)
+			size: {
+				x: maxLineWidth,
+				y: Math.abs(currentPos.y)
+			},
+			lines: lines		
 		};
 	}
 
-	private createGeometry()
+	private createGeometry(align: "center" | "left" = "center")
 	{
 		const allChars = this._textLines.join("").length;
 		const geometry = this.createInstancedBufferGeometry(allChars);
 		this._instancedMesh = new InstancedMesh(geometry, new MSDFTextShaderMaterial(this._textureAtlas, this._isWebGL2Available), allChars);
 
-		const textObjectSize = this.calculateTextObjectSize();
+		const textObject = this.preprocessText();
 
-		const currentPos = {
-			x: -textObjectSize.x / 2,
-			y: textObjectSize.y / 2
+		const linePosPointer = {
+			x: -textObject.size.x / 2,
+			y: textObject.size.y / 2
 		};
 
 		const dummy = new Object3D();
 
 		const scaleCorrection = 0.05;
-		let previousGlyph: IChar = null;
 		let counter = 0;
-		for (const lineOfText of this._textLines)
+		for (const lineOfText of textObject.lines)
 		{
-			currentPos.x = -textObjectSize.x / 2;
-			for (let i = 0; i < lineOfText.length; ++i)
+			linePosPointer.x = align === "left" ? -textObject.size.x / 2 : -lineOfText.width / 2;
+			for (let i = 0; i < lineOfText.quads.length; ++i)
 			{
-				const char = lineOfText[i];
+				const quad = lineOfText.quads[i];
+				const glyph = quad.glyph;
 
-				const glyph = this._glyphs.get(char);
-				if (glyph)
-				{
-					const kerning = previousGlyph ? this.getKerning(previousGlyph.id, glyph.id) : 0;
-					dummy.position.set(currentPos.x + (glyph.xoffset + kerning) * scaleCorrection, currentPos.y + (((this._font.common.lineHeight - glyph.height) - glyph.yoffset - this._font.common.lineHeight) * scaleCorrection), 0);
-					dummy.scale.set(glyph.width * scaleCorrection, glyph.height * scaleCorrection, 1);
-					dummy.updateMatrix();
-					this._instancedMesh.setMatrixAt(counter, dummy.matrix);
-	
-					(geometry.attributes.uvOffset as InstancedBufferAttribute).setXY(counter, glyph.x / this._atlasScale.x, (this._atlasScale.y - glyph.y - glyph.height) / this._atlasScale.y);
-					(geometry.attributes.uvSize as InstancedBufferAttribute).setXY(counter, glyph.width / this._atlasScale.x, glyph.height / this._atlasScale.y);
+				dummy.position.set(linePosPointer.x + quad.position.x, linePosPointer.y + (((this._font.common.lineHeight - glyph.height) - glyph.yoffset - this._font.common.lineHeight) * scaleCorrection), 0);
+				dummy.scale.set(glyph.width * scaleCorrection, glyph.height * scaleCorrection, 1);
+				dummy.updateMatrix();
+				this._instancedMesh.setMatrixAt(counter, dummy.matrix);
 
-					currentPos.x += (glyph.xadvance + kerning) * scaleCorrection;
-					counter++;
-					previousGlyph = glyph;
-				}
-				else
-				{
-					console.log(`Unknown char: ${char}`);
-				}
+				(geometry.attributes.uvOffset as InstancedBufferAttribute).setXY(counter, glyph.x / this._atlasScale.x, (this._atlasScale.y - glyph.y - glyph.height) / this._atlasScale.y);
+				(geometry.attributes.uvSize as InstancedBufferAttribute).setXY(counter, glyph.width / this._atlasScale.x, glyph.height / this._atlasScale.y);
+
+				counter++;
 			}
-			currentPos.y -= this._font.common.lineHeight*scaleCorrection;
+			linePosPointer.y -= this._font.common.lineHeight*scaleCorrection;
 		}
-		console.log(textObjectSize);
 	}
 
 	public get instancedMesh()

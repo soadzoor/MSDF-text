@@ -41,7 +41,6 @@ export class SceneManager
 			// ];
 			const text3D = new Text3D(font, textLines, texture, this._renderer.capabilities.isWebGL2);
 			const mesh = text3D.instancedMesh;
-			//const mesh = new Mesh(geometry, material);
 			this._scene.add(mesh);
 	
 			this.initBackground();
