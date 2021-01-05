@@ -19,7 +19,7 @@ export class SceneManager
 		this._canvas = <HTMLCanvasElement>document.getElementById("myCanvas");
 		this._scene = new Scene();
 		this._camera = new PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 7000);
-		this._camera.position.set(0.1, 0.1, 2);
+		this._camera.position.set(-10, 0.1, 20);
 
 		const texture = new TextureLoader().load("assets/Roboto-Bold.png", async () =>
 		{
@@ -30,30 +30,40 @@ export class SceneManager
 			texture.generateMipmaps = false;
 
 			const font = (await DataLoader.loadJSON("assets/Roboto-Bold-msdf.json")) as IFont;
-			//const shakespeare = await DataLoader.loadTXT("assets/shakespeare.txt");
+			const shakespeare = await DataLoader.loadTXT("assets/shakespeare.txt");
 
-			//const textLines = shakespeare.split("\n");
+			const textLines = shakespeare.split("\n");
+			// const textGroups: ITextGroup[] = [
+			// 	{
+			// 		lines: [
+			// 			"AasdadsVasdasdVAVAVAvavavasdadwe.",
+			// 			"Basdefef"
+			// 		],
+			// 		align: "left",
+			// 		position: {
+			// 			x: 0,
+			// 			y: 0
+			// 		}
+			// 	},
+			// 	{
+			// 		lines: [
+			// 			"CfbnfynsdfgYAYAdasdasVVasdawAWa..asd--",
+			// 			"Dgrgserf"
+			// 		],
+			// 		align: "center",
+			// 		position: {
+			// 			x: 5,
+			// 			y: 5
+			// 		}
+			// 	}
+			// ];
 			const textGroups: ITextGroup[] = [
 				{
-					lines: [
-						"AasdadsVasdasdVAVAVAvavavasdadwe.",
-						"Basdefef"
-					],
+					lines: textLines,
 					align: "left",
 					position: {
 						x: 0,
 						y: 0
-					}
-				},
-				{
-					lines: [
-						"CfbnfynsdfgYAYAdasdasVVasdawAWa..asd--",
-						"Dgrgserf"
-					],
-					align: "center",
-					position: {
-						x: 5,
-						y: 5
 					}
 				}
 			];
