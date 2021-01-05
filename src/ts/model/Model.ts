@@ -1,7 +1,0 @@
-export class Model
-{
-	constructor()
-	{
-
-	}
-}
