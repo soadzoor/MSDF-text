@@ -28,9 +28,9 @@ export class VignetteBackground
 			},
 			depthTest: false
 		});
-		const mesh = <any>(new Mesh(geometry, material));
+		const mesh = new Mesh(geometry, material) as any;
 		mesh.frustumCulled = false;
-		(<any>mesh).style = style;
+		mesh.style = style;
 		if (opt)
 		{
 			mesh.style(opt);

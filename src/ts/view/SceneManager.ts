@@ -1,5 +1,4 @@
-import {Scene, PerspectiveCamera, WebGLRenderer, AmbientLight, DirectionalLight, HemisphereLight, TextureLoader, LinearFilter} from "three";
-import {SceneLoader} from "./SceneLoader";
+import {Scene, PerspectiveCamera, WebGLRenderer, TextureLoader, LinearFilter} from "three";
 import {VignetteBackground} from "./VignetteBackground";
 import {TextGroupManager, IFont, ITextGroup} from "./TextGroupManager";
 import {DataLoader} from "./DataLoader";
@@ -12,11 +11,10 @@ export class SceneManager
 	private _camera: PerspectiveCamera;
 	private _controls: FPSControls;
 	private _renderer: WebGLRenderer;
-	private _sceneLoader: SceneLoader;
 
 	constructor()
 	{
-		this._canvas = <HTMLCanvasElement>document.getElementById("myCanvas");
+		this._canvas = document.getElementById("myCanvas") as HTMLCanvasElement;
 		this._scene = new Scene();
 		this._camera = new PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 7000);
 		this._camera.position.set(-10, 0.1, 20);
@@ -92,29 +90,11 @@ export class SceneManager
 		}).mesh);
 	}
 
-
-	private initLights()
-	{
-		const light1  = new AmbientLight(0xFFFFFF, 0.1);
-
-		const light2  = new DirectionalLight(0xFFFFFF, 0.1);
-		light2.position.set(0.5, 0, 0.866); // ~60ยบ
-
-		const light3 = new HemisphereLight(0xffffbb, 0x080820, 0.8);
-
-		this._scene.add(light1, light2, light3);
-	}
-
 	private initControls()
 	{
 		this._controls = new FPSControls(this);
 		this._controls.setWASDSpeed(3);
 		this._controls.activate();
-	}
-
-	private initMeshes()
-	{
-		this._sceneLoader = new SceneLoader(this, `assets/models/test.glb`);
 	}
 
 	private initRenderer()

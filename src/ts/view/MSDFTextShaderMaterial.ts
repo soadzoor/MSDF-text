@@ -1,4 +1,4 @@
-import {RawShaderMaterial, Shader, Texture} from "three";
+import {IUniform, RawShaderMaterial, Shader, Texture} from "three";
 
 export class MSDFTextShaderMaterial extends RawShaderMaterial
 {
@@ -99,7 +99,7 @@ void main()
 			shader.uniforms = {
 				map: this._textureAtlas,
 				textureAtlasResolution: this._textureAtlasResolution
-			} as any;
+			} as {[key: string]: IUniform};
 		};
 	}
 }
