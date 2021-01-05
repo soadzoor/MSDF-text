@@ -7,11 +7,6 @@ export class MSDFTextShaderMaterial extends RawShaderMaterial
 		value: Texture;
 	};
 
-	private _textureAtlasResolution: {
-		type: "2fv";
-		value: number[];
-	};
-
 	private _vertexShader: string = 
 `precision highp float;
 
@@ -23,8 +18,6 @@ attribute vec2 uvSize;
 
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
-
-uniform vec2 textureAtlasResolution;
 
 varying vec2 vUv;
 
@@ -86,19 +79,13 @@ void main()
 			value: textureAtlas
 		};
 
-		this._textureAtlasResolution = {
-			type: "2fv",
-			value: [textureAtlas.image.width, textureAtlas.image.height]
-		};
-
 		this.onBeforeCompile = (shader: Shader) =>
 		{
 			shader.vertexShader = this._vertexShader;
 			shader.fragmentShader = this._fragmentShader;
 
 			shader.uniforms = {
-				map: this._textureAtlas,
-				textureAtlasResolution: this._textureAtlasResolution
+				map: this._textureAtlas
 			} as {[key: string]: IUniform};
 		};
 	}
